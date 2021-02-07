@@ -1,11 +1,303 @@
-# Python code obfuscated by www.development-tools.net 
- 
+#########################################
+############CODE BY @NEMZZY668, DEOBFUSCATION BY ROWGATH###########
+#########################################
+import urllib,os,re,sys,json,requests,resolveurl
+from kodi_six import xbmc, xbmcaddon, xbmcplugin, xbmcgui, xbmcvfs
+from six.moves.urllib.parse import parse_qs, quote_plus, urlparse, parse_qsl
+from six import PY2
+from bs4 import BeautifulSoup
+translatePath = xbmc.translatePath if PY2 else xbmcvfs.translatePath
+#########################################
+addon_id            = 'plugin.video.fanime'
+selfAddon           = xbmcaddon.Addon(id=addon_id)
+AddonTitle          = '[COLOR magenta][B]FANime[/COLOR][/B]'
+Addonfanart         = translatePath(os.path.join('special://home/addons/' + addon_id, 'fanart.jpg'))
+Addonicon           = translatePath(os.path.join('special://home/addons/' + addon_id, 'icon.png'))
+AddonDesc           = '[COLOR magenta][B]FANime Was Created By @Nemzzy668 ( Follow On Twitter )[/COLOR][/B]'
+dialog              = xbmcgui.Dialog()
+#########################################
+def GetMenu():
+	addDir('[COLOR magenta][B]Recent Releases[/COLOR][/B]','https://www5.gogoanimehub.tv/anime-list.html',2,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]A to Z[/COLOR][/B]','https://www5.gogoanimehub.tv/anime-list.html',3,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]Genres[/COLOR][/B]','https://www5.gogoanimehub.tv/',5,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]New Seasons[/COLOR][/B]','https://www5.gogoanimehub.tv/new-season.html',6,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]Ongoing Series[/COLOR][/B]','https://www5.gogoanimehub.tv/',7,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]Recently Added Series[/COLOR][/B]','https://www5.gogoanimehub.tv/',8,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]Movies[/COLOR][/B]','https://www5.gogoanimehub.tv/anime-movies.html',6,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR magenta][B]Popular[/COLOR][/B]','https://www5.gogoanimehub.tv/popular.html',6,Addonicon,Addonfanart,AddonDesc)
+	addDir('[COLOR aqua][B]SEARCH[/COLOR][/B]','url',9,Addonicon,Addonfanart,AddonDesc)
+def Search():
+	string =''
+	SearchUrl = ('https://www5.gogoanimehub.tv///search.html?keyword=%s')
+	keyboard = xbmc.Keyboard(string, '[COLOR magenta][B]What Would You Like To Search For?[/B][/COLOR]')
+	keyboard.doModal()
+	if keyboard.isConfirmed():
+		string = keyboard.getText()
+		if len(string)>1:
+			string = string.replace(' ','-')
+			Search = (SearchUrl %string)
+			MainContent(Search)
+		else: dialog.notification(AddonTitle, '[COLOR gold]No Term Entered[/COLOR]', Addonicon, 2500)
+	else: dialog.notification(AddonTitle, '[COLOR gold]Search Cancelled[/COLOR]', Addonicon, 2500)
+def Recent(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find('nav', class_={'menu_recent'})
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	for i in data.find_all('li'):
+		name = i.a['title']
+		name = name.encode("utf8") if PY2 else name
+		url2 = i.a['href']
+		url2 = base_domain+url2 if url2.startswith('/') else url2
+		icon = i.find('div', class_={'thumbnail-recent'})
+		icon = re.findall(r'''(http.*?)['"]''',str(icon))[0]
+		epi = i.p.text
+		epi = epi.encode("utf8") if PY2 else epi
+		addDir('[COLOR magenta][B]%s | %s[/COLOR][/B]' % (name,epi),url2,20,icon,Addonfanart,description='')
+def ATOZ(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find_all('li', class_={'first-char'})
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	for i in data:
+		name = i.a.text
+		url2 = i.a['href']
+		url2 = base_domain+url2 if url2.startswith('/') else url2
+		addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,4,Addonicon,Addonfanart,AddonDesc)
+def ATOZContent(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	if not '?page=' in url: url = ('%s?page=1' %url)
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find('ul', class_={'listing'})
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	for i in data:
+		try:
+			name = i.a['title']
+			if name =='': name = i.a.text
+			name = name.encode("utf8") if PY2 else name
+			url2 = i.a['href']
+			url2 = base_domain+url2 if url2.startswith('/') else url2
+			try: icon = re.findall(r'''img\s+src=['"](.*?)['"]''',str(i))[0]
+			except: icon = Addonicon
+			addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,10,icon,Addonfanart,AddonDesc)
+		except: pass
+	try:
+		Getpage = url.split('?page=')[1]
+		BasePage = url.split('?page=')[0]
+		GenNext = int(Getpage) + 1
+		NextPage = ('%s?page=%s' %(BasePage,GenNext))
+		addDir('[COLOR gold][B]Next Page -->[/COLOR][/B]',NextPage,4,Addonicon,Addonfanart,'Next Page')
+	except: pass
+def GetShowContent(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	try: ShowIcon = soup.find("meta",  property="og:image")['content']
+	except: ShowIcon = Addonicon
+	ShowDescription = soup.find_all('p', class_={'type'})
+	DescText = ''
+	EpiID = re.findall(r'''value=['"](.*?)['"]\sid=['"]movie_id''',link)[0]
+	AjaxUrl = ('https://ajax.gogocdn.net/ajax/load-list-episode?ep_start=1&ep_end=1000&id=%s' % EpiID)
+	for d in ShowDescription:
+		try:
+			DescText = DescText + d.text+('\n')
+		except: DescText = 'No Description Available'
+		DescText = DescText.encode("utf8") if PY2 else DescText
+	GetEpisodes = requests.get(AjaxUrl,headers=headers).text
+	soup2 = BeautifulSoup(GetEpisodes,'html.parser')
+	content = soup2.find_all('a')
+	for i in content:
+		name = i.text
+		name = name.replace('\n',' ').strip()
+		name = name.encode("utf8") if PY2 else name
+		url2 = i['href'].strip()
+		url2 = base_domain+url2 if url2.startswith('/') else url2
+		addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,20,ShowIcon,Addonfanart,DescText)
+def Genre(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find("li",  class_={'movie genre hide'})
+	for i in data.find_all('a'):
+		try:
+			name = i['title']
+			name = name.encode("utf8") if PY2 else name
+			url2 = i['href']
+			url2 = base_domain+url2 if url2.startswith('/') else url2
+			addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,6,Addonicon,Addonfanart,AddonDesc)
+		except: pass
+def MainContent(url):
+	name = ''
+	if not '?page=' in url and not 'search.html' in url: url = ('%s?page=1' %url)
+	if 'search.html' in url and not '&page=' in url: url = ('%s&page=1' %url)
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find("ul",  class_={'items'})
+	for i in data.find_all('li'):
+		name = i.a['title']
+		name = name.encode("utf8") if PY2 else name
+		url2 = i.a['href']
+		url2 = base_domain+url2 if url2.startswith('/') else url2
+		icon = i.img['src']
+		addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,10,icon,Addonfanart,description='')
+	try:
+		Getpage = url.split('?page=')[1]
+		BasePage = url.split('?page=')[0]
+		GenNext = int(Getpage) + 1
+		NextPage = ('%s?page=%s' %(BasePage,GenNext))
+		addDir('[COLOR gold][B]Next Page -->[/COLOR][/B]',NextPage,6,Addonicon,Addonfanart,'Next Page')
+	except: pass
+	if 'search.html' in url:
+		try:
+			Getpage = url.split('&page=')[1]
+			BasePage = url.split('&page=')[0]
+			GenNext = int(Getpage) + 1
+			NextPage = ('%s&page=%s' %(BasePage,GenNext))
+			addDir('[COLOR gold][B]Next Page -->[/COLOR][/B]',NextPage,6,Addonicon,Addonfanart,'Next Page')
+		except: pass
+	if 'search.html' in url and name == '':
+		name = 'Sorry No Items Found'
+		addLink('[COLOR magenta][B]%s[/COLOR][/B]' % name,'url2',9999,Addonicon,Addonfanart,description='')
+def OnGoing(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find("div",  class_={'overview'})
+	for i in data.find_all('li'):
+		name = i.a['title']
+		name = name.encode("utf8") if PY2 else name
+		url2 = i.a['href']
+		url2 = base_domain+url2 if url2.startswith('/') else url2
+		addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,10,Addonicon,Addonfanart,description='')
+def RecentlyAdded(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	base_domain = 'https://www5.gogoanimehub.tv/'
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find("div",  class_={'added_series_body final'})
+	for i in data.find_all('li'):
+		name = i.a['title']
+		name = name.encode("utf8") if PY2 else name
+		url2 = i.a['href']
+		url2 = base_domain+url2 if url2.startswith('/') else url2
+		addDir('[COLOR magenta][B]%s[/COLOR][/B]' % name,url2,10,Addonicon,Addonfanart,description='')
+def LinkGetter(name,url,iconimage,description):
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+	link = requests.get(url,headers=headers).text
+	soup = BeautifulSoup(link,'html.parser')
+	data = soup.find('div', class_={'anime_muti_link'})
+	found = 0
+	for i in data.find_all('a'):
+		sources = i['data-video']
+		sources = 'https:'+sources if sources.startswith('//') else sources
+		if resolveurl.HostedMediaFile(sources):
+			found += 1
+			name = ('Source %s' % found)
+			addLink('[COLOR magenta][B]%s[/COLOR][/B]' % name,sources,99,iconimage,Addonfanart,description)
+def PLAYLINK(name,link,iconimage):
+	dialog.notification(AddonTitle, '[COLOR yellow]Hunting Link Now Be Patient[/COLOR]', Addonicon, 2500)
+	try:
+		hmf = resolveurl.HostedMediaFile(url)
+		if hmf.valid_url(): link = hmf.resolve()
+		if not 'user-agent' in link.lower(): link = link+'|User-Agent=Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
+		xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, xbmcgui.ListItem(path=link))
+		quit()
+	except Exception as e:
+		dialog.notification(AddonTitle,"[B][COLOR yellow]%s[/B][/COLOR]" % e,Addonicon,5000)
+		quit()
 
-import base64, codecs
-magic = 'IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNIyMjIyMjIyMjIyMjQ09ERSBCWSBATkVNWlpZNjY4IyMjIyMjIyMjIyMNIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNaW1wb3J0IHVybGxpYixvcyxyZSxzeXMsanNvbixyZXF1ZXN0cyxyZXNvbHZldXJsDWZyb20ga29kaV9zaXggaW1wb3J0IHhibWMsIHhibWNhZGRvbiwgeGJtY3BsdWdpbiwgeGJtY2d1aSwgeGJtY3Zmcw1mcm9tIHNpeC5tb3Zlcy51cmxsaWIucGFyc2UgaW1wb3J0IHBhcnNlX3FzLCBxdW90ZV9wbHVzLCB1cmxwYXJzZSwgcGFyc2VfcXNsDWZyb20gc2l4IGltcG9ydCBQWTINZnJvbSBiczQgaW1wb3J0IEJlYXV0aWZ1bFNvdXANdHJhbnNsYXRlUGF0aCA9IHhibWMudHJhbnNsYXRlUGF0aCBpZiBQWTIgZWxzZSB4Ym1jdmZzLnRyYW5zbGF0ZVBhdGgNIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNYWRkb25faWQgICAgICAgICAgICA9ICdwbHVnaW4udmlkZW8uZmFuaW1lJw1zZWxmQWRkb24gICAgICAgICAgID0geGJtY2FkZG9uLkFkZG9uKGlkPWFkZG9uX2lkKQ1BZGRvblRpdGxlICAgICAgICAgID0gJ1tDT0xPUiBtYWdlbnRhXVtCXUZBTmltZVsvQ09MT1JdWy9CXScNQWRkb25mYW5hcnQgICAgICAgICA9IHRyYW5zbGF0ZVBhdGgob3MucGF0aC5qb2luKCdzcGVjaWFsOi8vaG9tZS9hZGRvbnMvJyArIGFkZG9uX2lkLCAnZmFuYXJ0LmpwZycpKQ1BZGRvbmljb24gICAgICAgICAgID0gdHJhbnNsYXRlUGF0aChvcy5wYXRoLmpvaW4oJ3NwZWNpYWw6Ly9ob21lL2FkZG9ucy8nICsgYWRkb25faWQsICdpY29uLnBuZycpKQ1BZGRvbkRlc2MgICAgICAgICAgID0gJ1tDT0xPUiBtYWdlbnRhXVtCXUZBTmltZSBXYXMgQ3JlYXRlZCBCeSBATmVtenp5NjY4ICggRm9sbG93IE9uIFR3aXR0ZXIgKVsvQ09MT1JdWy9CXScNZGlhbG9nICAgICAgICAgICAgICA9IHhibWNndWkuRGlhbG9nKCkNIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNZGVmIEdldE1lbnUoKToNCWFkZERpcignW0NPTE9SIG1hZ2VudGFdW0JdUmVjZW50IFJlbGVhc2VzWy9DT0xPUl1bL0JdJywnaHR0cHM6Ly93d3c1LmdvZ29hbmltZWh1Yi50di9hbmltZS1saXN0Lmh0bWwnLDIsQWRkb25pY29uLEFkZG9uZmFuYXJ0LEFkZG9uRGVzYykNCWFkZERpcignW0NPTE9SIG1hZ2VudGFdW0JdQSB0byBaWy9DT0xPUl1bL0JdJywnaHR0cHM6Ly93d3c1LmdvZ29hbmltZWh1Yi50di9hbmltZS1saXN0Lmh0bWwnLDMsQWRkb25pY29uLEFkZG9uZmFuYXJ0LEFkZG9uRGVzYykNCWFkZERpcignW0NPTE9SIG1hZ2VudGFdW0JdR2VucmVzWy9DT0xPUl1bL0JdJywnaHR0cHM6Ly93d3c1LmdvZ29hbmltZWh1Yi50di8nLDUsQWRkb25pY29uLEFkZG9uZmFuYXJ0LEFkZG9uRGVzYykNCWFkZERpcignW0NPTE9SIG1hZ2VudGFdW0JdTmV3IFNlYXNvbnNbL0NPTE9SXVsvQl0nLCdodHRwczovL3d3dzUuZ29nb2FuaW1laHViLnR2L25ldy1zZWFzb24uaHRtbCcsNixBZGRvbmljb24sQWRkb25mYW5hcnQsQWRkb25EZXNjKQ0JYWRkRGlyKCdbQ09MT1IgbWFnZW50YV1bQl1PbmdvaW5nIFNlcmllc1svQ09MT1JdWy9CXScsJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvJyw3LEFkZG9uaWNvbixBZGRvbmZhbmFydCxBZGRvbkRlc2MpDQlhZGREaXIoJ1tDT0xPUiBtYWdlbnRhXVtCXVJlY2VudGx5IEFkZGVkIFNlcmllc1svQ09MT1JdWy9CXScsJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvJyw4LEFkZG9uaWNvbixBZGRvbmZhbmFydCxBZGRvbkRlc2MpDQlhZGREaXIoJ1tDT0xPUiBtYWdlbnRhXVtCXU1vdmllc1svQ09MT1JdWy9CXScsJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvYW5pbWUtbW92aWVzLmh0bWwnLDYsQWRkb25pY29uLEFkZG9uZmFuYXJ0LEFkZG9uRGVzYykNCWFkZERpcignW0NPTE9SIG1hZ2VudGFdW0JdUG9wdWxhclsvQ09MT1JdWy9CXScsJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvcG9wdWxhci5odG1sJyw2LEFkZG9uaWNvbixBZGRvbmZhbmFydCxBZGRvbkRlc2MpDQlhZGREaXIoJ1tDT0xPUiBhcXVhXVtCXVNFQVJDSFsvQ09MT1JdWy9CXScsJ3VybCcsOSxBZGRvbmljb24sQWRkb25mYW5hcnQsQWRkb25EZXNjKQ1kZWYgU2VhcmNoKCk6DQlzdHJpbmcgPScnDQlTZWFyY2hVcmwgPSAoJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvLy9zZWFyY2guaHRtbD9rZXl3b3JkPSVzJykNCWtleWJvYXJkID0geGJtYy5LZXlib2FyZChzdHJpbmcsICdbQ09MT1IgbWFnZW50YV1bQl1XaGF0IFdvdWxkIFlvdSBMaWtlIFRvIFNlYXJjaCBGb3I/Wy9CXVsvQ09MT1JdJykNCWtleWJvYXJkLmRvTW9kYWwoKQ0JaWYga2V5Ym9hcmQuaXNDb25maXJtZWQoKToNCQlzdHJpbmcgPSBrZXlib2FyZC5nZXRUZXh0KCkNCQlpZiBsZW4oc3RyaW5nKT4xOg0JCQlzdHJpbmcgPSBzdHJpbmcucmVwbGFjZSgnICcsJy0nKQ0JCQlTZWFyY2ggPSAoU2VhcmNoVXJsICVzdHJpbmcpDQkJCU1haW5Db250ZW50KFNlYXJjaCkNCQllbHNlOiBkaWFsb2cubm90aWZpY2F0aW9uKEFkZG9uVGl0bGUsICdbQ09MT1IgZ29sZF1ObyBUZXJtIEVudGVyZWRbL0NPTE9SXScsIEFkZG9uaWNvbiwgMjUwMCkNCWVsc2U6IGRpYWxvZy5ub3RpZmljYXRpb24oQWRkb25UaXRsZSwgJ1tDT0xPUiBnb2xkXVNlYXJjaCBDYW5jZWxsZWRbL0NPTE9SXScsIEFkZG9uaWNvbiwgMjUwMCkNZGVmIFJlY2VudCh1cmwpOg0JaGVhZGVycyA9IHsnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvNjAuMC4zMTEyLjExMyBTYWZhcmkvNTM3LjM2J30NCWxpbmsgPSByZXF1ZXN0cy5nZXQodXJsLGhlYWRlcnM9aGVhZGVycykudGV4dA0Jc291cCA9IEJlYXV0aWZ1bFNvdXAobGluaywnaHRtbC5wYXJzZXInKQ0JZGF0YSA9IHNvdXAuZmluZCgnbmF2JywgY2xhc3NfPXsnbWVudV9yZWNlbnQnfSkNCWJhc2VfZG9tYWluID0gJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvJw0JZm9yIGkgaW4gZGF0YS5maW5kX2FsbCgnbGknKToNCQluYW1lID0gaS5hWyd0aXRsZSddDQkJbmFtZSA9IG5hbWUuZW5jb2RlKCJ1dGY4IikgaWYgUFkyIGVsc2UgbmFtZQ0JCXVybDIgPSBpLmFbJ2hyZWYnXQ0JCXVybDIgPSBiYXNlX2RvbWFpbit1cmwyIGlmIHVybDIuc3RhcnRzd2l0aCgnLycpIGVsc2UgdXJsMg0JCWljb24gPSBpLmZpbmQoJ2RpdicsIGNsYXNzXz17J3RodW1ibmFpbC1yZWNlbnQnfSkNCQlpY29uID0gcmUuZmluZGFsbChyJycnKGh0dHAuKj8pWyciXScnJyxzdHIoaWNvbikpWzBdDQkJZXBpID0gaS5wLnRleHQNCQllcGkgPSBlcGkuZW5jb2RlKCJ1dGY4IikgaWYgUFkyIGVsc2UgZXBpDQkJYWRkRGlyKCdbQ09MT1IgbWFnZW50YV1bQl0lcyB8ICVzWy9DT0xPUl1bL0JdJyAlIChuYW1lLGVwaSksdXJsMiwyMCxpY29uLEFkZG9uZmFuYXJ0LGRlc2NyaXB0aW9uPScnKQ1kZWYgQVRPWih1cmwpOg0JaGVhZGVycyA9IHsnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvNjAuMC4zMTEyLjExMyBTYWZhcmkvNTM3LjM2J30NCWxpbmsgPSByZXF1ZXN0cy5nZXQodXJsLGhlYWRlcnM9aGVhZGVycykudGV4dA0Jc291cCA9IEJlYXV0aWZ1bFNvdXAobGluaywnaHRtbC5wYXJzZXInKQ0JZGF0YSA9IHNvdXAuZmluZF9hbGwoJ2xpJywgY2xhc3NfPX'
-love = 'faMzylp3DgL2uupvq9XD0WLzSmMI9xo21unJ4tCFNanUE0pUZ6Yl93q3p1YzqiM29uozygMJu1Lv50qv8aQDyzo3VtnFOcovOxLKEuBt0WPJ5uoJHtCFOcYzRhqTI4qN0WPKIloQVtCFOcYzSoW2ulMJLaKD0WPKIloQVtCFOvLKAyK2EioJScovg1pzjlVTyzVUIloQVhp3EupaEmq2y0nPtaYlpcVTIfp2HtqKWfZt0WPJSxMREcpvtaJ0ACGR9FVT1uM2IhqTSqJ0WqWKAoY0ACGR9FKIfiDy0aVPHtozSgMFk1pzjlYQDfDJExo25cL29hYRSxMT9hMzShLKW0YRSxMT9hETImLlxAMTIzVRSHG1cQo250MJ50XUIloPx6QDybMJSxMKWmVQ0trlqIp2IlYHSaMJ50WmbtW01irzyfoTRiAF4jVPuKnJ5xo3qmVR5HVQRjYwN7VSqcowL0BlO4AwDcVRSjpTkyI2IvF2y0YmHmAl4mAvNbF0uHGHjfVTkcn2HtE2Iwn28cVRAbpz9gMF82ZP4jYwZkZGVhZGRmVSAuMzSlnF81ZmphZmLasD0WnJLtoz90VPp/pTSaMG0aVTyhVUIloQbtqKWfVQ0tXPpypm9jLJqyCGRaVPI1pzjcQDyfnJ5eVQ0tpzIkqJImqUZhM2I0XUIloPkbMJSxMKWmCJuyLJEypaZcYaEyrUDAPKAiqKNtCFOPMJS1qTyzqJkGo3IjXTkcozffW2u0oJjhpTSlp2IlWlxAPJEuqTRtCFOmo3IjYzMcozDbW3IfWljtL2kup3AsCKfaoTymqTyhMlq9XD0WLzSmMI9xo21unJ4tCFNanUE0pUZ6Yl93q3p1YzqiM29uozygMJu1Lv50qv8aQDyzo3VtnFOcovOxLKEuBt0WPKElrGbAPDxWozSgMFN9VTxhLIfaqTy0oTHaKD0WPDycMvOhLJ1yVQ09Wlp6VT5uoJHtCFOcYzRhqTI4qN0WPDyhLJ1yVQ0tozSgMF5yozAiMTHbVaI0MwtvXFOcMvODJGVtMJkmMFOhLJ1yQDxWPKIloQVtCFOcYzSoW2ulMJLaKD0WPDy1pzjlVQ0tLzSmMI9xo21unJ4eqKWfZvOcMvO1pzjlYaA0LKW0p3qcqTtbWl8aXFOyoUAyVUIloQVAPDxWqUW5BvOcL29hVQ0tpzHhMzyhMTSfoPulWlpanJ1aKUZep3WwCIfaVy0bYvb/XIfaVy0aWlpfp3ElXTxcXIfjKD0WPDyyrTAypUD6VTywo24tCFOOMTEiozywo24APDxWLJExETylXPqoD09ZG1VtoJSaMJ50LI1oDy0yp1fiD09ZG1WqJl9PKFptWFOhLJ1yYUIloQVfZGNfnJAiovkOMTEiozMuozSlqPkOMTEioxEyp2ZcQDxWMKuwMKO0BvOjLKAmQDy0pax6QDxWE2I0pTSaMFN9VUIloP5mpTkcqPtaC3OuM2H9WlyoZI0APDyPLKAyHTSaMFN9VUIloP5mpTkcqPtaC3OuM2H9WlyoZS0APDyUMJ5BMKu0VQ0tnJ50XRqyqUOuM2HcVPftZD0WPH5yrUEDLJqyVQ0tXPpypm9jLJqyCFImWlNyXRWup2IDLJqyYRqyox5yrUDcXD0WPJSxMREcpvtaJ0ACGR9FVTqioTEqJ0WqGzI4qPODLJqyVP0gCyfiD09ZG1WqJl9PKFpfGzI4qSOuM2HfAPkOMTEiozywo24fDJExo25zLJ5upaDfW05yrUDtHTSaMFpcQDyyrTAypUD6VUOup3ZAMTIzVRqyqSAbo3qQo250MJ50XUIloPx6QDybMJSxMKWmVQ0trlqIp2IlYHSaMJ50WmbtW01irzyfoTRiAF4jVPuKnJ5xo3qmVR5HVQRjYwN7VSqcowL0BlO4AwDcVRSjpTkyI2IvF2y0YmHmAl4mAvNbF0uHGHjfVTkcn2HtE2Iwn28cVRAbpz9gMF82ZP4jYwZkZGVhZGRmVSAuMzSlnF81ZmphZmLasD0WLzSmMI9xo21unJ4tCFNanUE0pUZ6Yl93q3p1YzqiM29uozygMJu1Lv50qv8aQDyfnJ5eVQ0tpzIkqJImqUZhM2I0XUIloPkbMJSxMKWmCJuyLJEypaZcYaEyrUDAPKAiqKNtCFOPMJS1qTyzqJkGo3IjXTkcozffW2u0oJjhpTSlp2IlWlxAPKElrGbtH2uiq0ywo24tCFOmo3IjYzMcozDbVz1yqTRvYPNtpUWipTIlqUx9Vz9aBzygLJqyVvyoW2AioaEyoaDaKD0WMKuwMKO0BvOGnT93FJAiovN9VRSxMT9hnJAiot0WH2uiq0Eyp2AlnKO0nJ9hVQ0tp291pP5znJ5xK2SfoPtapPpfVTAfLKAmKm17W3E5pTHasFxAPHEyp2AHMKu0VQ0tWlpAPHIjnHyRVQ0tpzHhMzyhMTSfoPulWlpaqzSfqJH9JlpvKFthXw8cJlpvKIkmnJD9JlpvKJ1iqzyyK2yxWlpaYTkcozfcJmOqQDyOnzS4IKWfVQ0tXPqbqUEjpmbiY2SdLKthM29ao2Axov5hMKDiLJcurP9fo2SxYJkcp3DgMKOcp29xMG9ypS9mqTSlqQ0kWzIjK2IhMQ0kZQNjWzyxCFImWlNyVRIjnHyRXD0WMz9lVTDtnJ4tH2uiq0Eyp2AlnKO0nJ9hBt0WPKElrGbAPDxWETImL1EyrUDtCFORMKAwITI4qPNeVTDhqTI4qPfbW1khWlxAPDyyrTAypUD6VREyp2AHMKu0VQ0tW05iVREyp2AlnKO0nJ9hVRS2LJyfLJWfMFpAPDyRMKAwITI4qPN9VREyp2AHMKu0YzIhL29xMFtvqKEzBPVcVTyzVSOMZvOyoUAyVREyp2AHMKu0QDyUMKESpTymo2EyplN9VUWypKIyp3EmYzqyqPuOnzS4IKWfYTuyLJEypaZ9nTIuMTIlplxhqTI4qN0Wp291pQVtCFOPMJS1qTyzqJkGo3IjXRqyqRIjnKAiMTImYPqbqT1fYaOupaAypvpcQDywo250MJ50VQ0tp291pQVhMzyhMS9uoTjbW2RaXD0WMz9lVTxtnJ4tL29hqTIhqQbAPDyhLJ1yVQ0tnF50MKu0QDxWozSgMFN9VT5uoJHhpzIjoTSwMFtaKT4aYPptWlxhp3ElnKNbXD0WPJ5uoJHtCFOhLJ1yYzIhL29xMFtvqKEzBPVcVTyzVSOMZvOyoUAyVT5uoJHAPDy1pzjlVQ0tnIfanUWyMvqqYaA0pzyjXPxAPDy1pzjlVQ0tLzSmMI9xo21unJ4eqKWfZvOcMvO1pzjlYaA0LKW0p3qcqTtbWl8aXFOyoUAyVUIloQVAPDyuMTERnKVbW1gQG0kCHvOgLJqyoaEuKIgPKFImJl9QG0kCHy1oY0WqWlNyVT5uoJHfqKWfZvjlZPkGnT93FJAiovkOMTEiozMuozSlqPkRMKAwITI4qPxAMTIzVRqyoaWyXUIloPx6QDybMJSxMKWmVQ0trlqIp2IlYHSaMJ50WmbtW01irzyfoTRiAF4jVPuKnJ5xo3qmVR5HVQRjYwN7VSqcowL0BlO4AwDcVRSjpTkyI2IvF2y0YmHmAl4mAvNbF0uHGHjfVTkcn2HtE2Iwn28cVRAbpz9gMF82ZP4jYwZkZGVhZGRmVSAuMzSlnF81ZmphZmLasD0WLzSmMI9xo21unJ4tCFNanUE0pUZ6Yl93q3p1YzqiM29uozygMJu1Lv50qv8aQDyfnJ5eVQ0tpzIkqJImqUZhM2I0XUIloPkbMJSxMKWmCJuyLJEypaZcYaEyrUDAPKAiqKNtCFOPMJS1qTyzqJkGo3IjXTkcozffW2u0oJjhpTSlp2IlWlxAPJEuqTRtCFOmo3IjYzMcozDbVzkcVvjtVTAfLKAmKm17W21iqzyyVTqyoaWyVTucMTHasFxAPJMipvOcVTyhVTEuqTRhMzyhMS9uoTjbW2RaXGbAPDy0pax6QDxWPJ5uoJHtCFOcJlq0nKEfMFqqQDxWPJ5uoJHtCFOhLJ1yYzIhL29xMFtvqKEzBPVcVTyzVSOMZvOyoUAyVT5uoJHAPDxWqKWfZvN9VTyoW2ulMJLaKD0WPDy1pzjlVQ0tLzSmMI9xo21unJ4eqKWfZvOcMvO1pzjlYaA0LKW0p3qcqTtbWl8aXFOyoUAyVUIloQVAPDxWLJExETylXPqoD09ZG1VtoJSaMJ50LI1oDy0yp1fiD09ZG1WqJl9PKFptWFOhLJ1yYUIloQVfAvkOMTEiozywo24fDJExo25zLJ5upaDfDJExo25RMKAwXD0WPJI4L2IjqQbtpTSmpj1xMJLtGJScoxAioaEyoaDbqKWfXGbAPJ5uoJHtCFNaWj0WnJLtoz90VPp/pTSaMG0aVTyhVUIloPOuozDtoz90VPqmMJSlL2thnUEgoPptnJ4tqKWfBvO1pzjtCFNbWlImC3OuM2H9ZFptWKIloPxAPJyzVPqmMJSlL2thnUEgoPptnJ4tqKWfVTShMPOho3DtWlMjLJqyCFptnJ4tqKWfBvO1pzjtCFNbWlImWaOuM2H9ZFptWKIloPxAPJuyLJEypaZtCFO7W1ImMKVgDJqyoaDaBvNaGJ96nJkfLF81YwNtXSqcozEiq3ZtGyDtZGNhZQftI2yhAwD7VUt2APxtDKOjoTIKMJWYnKDiAGZ3YwZ2VPuYFSEAGPjtoTyeMFOUMJAeolxtD2ulo21yYmLjYwNhZmRkZv4kZGZtH2SzLKWcYmHmAl4mAvq9QDyvLKAyK2EioJScovN9VPqbqUEjpmbiY3q3qmHhM29ao2ShnJ1ynUIvYaE2YlpAPJkcozftCFOlMKS1MKA0pl5aMKDbqKWfYTuyLJEypaZ9nTIuMTIlplxhqTI4qN0Wp291pPN9VRWyLKI0nJM1oSAiqKNboTyhnljanUEgoP5jLKWmMKVaXD0WMTS0LFN9VUAiqKNhMzyhMPtvqJjvYPNtL2kup3AsCKfanKEyoKZasFxAPJMipvOcVTyhVTEuqTRhMzyhMS9uoTjbW2kcWlx6QDxWozSgMFN9VTxhLIfaqTy0oTHaKD0W'
-god = 'CW5hbWUgPSBuYW1lLmVuY29kZSgidXRmOCIpIGlmIFBZMiBlbHNlIG5hbWUNCQl1cmwyID0gaS5hWydocmVmJ10NCQl1cmwyID0gYmFzZV9kb21haW4rdXJsMiBpZiB1cmwyLnN0YXJ0c3dpdGgoJy8nKSBlbHNlIHVybDINCQlpY29uID0gaS5pbWdbJ3NyYyddDQkJYWRkRGlyKCdbQ09MT1IgbWFnZW50YV1bQl0lc1svQ09MT1JdWy9CXScgJSBuYW1lLHVybDIsMTAsaWNvbixBZGRvbmZhbmFydCxkZXNjcmlwdGlvbj0nJykNCXRyeToNCQlHZXRwYWdlID0gdXJsLnNwbGl0KCc/cGFnZT0nKVsxXQ0JCUJhc2VQYWdlID0gdXJsLnNwbGl0KCc/cGFnZT0nKVswXQ0JCUdlbk5leHQgPSBpbnQoR2V0cGFnZSkgKyAxDQkJTmV4dFBhZ2UgPSAoJyVzP3BhZ2U9JXMnICUoQmFzZVBhZ2UsR2VuTmV4dCkpDQkJYWRkRGlyKCdbQ09MT1IgZ29sZF1bQl1OZXh0IFBhZ2UgLS0+Wy9DT0xPUl1bL0JdJyxOZXh0UGFnZSw2LEFkZG9uaWNvbixBZGRvbmZhbmFydCwnTmV4dCBQYWdlJykNCWV4Y2VwdDogcGFzcw0JaWYgJ3NlYXJjaC5odG1sJyBpbiB1cmw6DQkJdHJ5Og0JCQlHZXRwYWdlID0gdXJsLnNwbGl0KCcmcGFnZT0nKVsxXQ0JCQlCYXNlUGFnZSA9IHVybC5zcGxpdCgnJnBhZ2U9JylbMF0NCQkJR2VuTmV4dCA9IGludChHZXRwYWdlKSArIDENCQkJTmV4dFBhZ2UgPSAoJyVzJnBhZ2U9JXMnICUoQmFzZVBhZ2UsR2VuTmV4dCkpDQkJCWFkZERpcignW0NPTE9SIGdvbGRdW0JdTmV4dCBQYWdlIC0tPlsvQ09MT1JdWy9CXScsTmV4dFBhZ2UsNixBZGRvbmljb24sQWRkb25mYW5hcnQsJ05leHQgUGFnZScpDQkJZXhjZXB0OiBwYXNzDQlpZiAnc2VhcmNoLmh0bWwnIGluIHVybCBhbmQgbmFtZSA9PSAnJzoNCQluYW1lID0gJ1NvcnJ5IE5vIEl0ZW1zIEZvdW5kJw0JCWFkZExpbmsoJ1tDT0xPUiBtYWdlbnRhXVtCXSVzWy9DT0xPUl1bL0JdJyAlIG5hbWUsJ3VybDInLDk5OTksQWRkb25pY29uLEFkZG9uZmFuYXJ0LGRlc2NyaXB0aW9uPScnKQ1kZWYgT25Hb2luZyh1cmwpOg0JaGVhZGVycyA9IHsnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvNjAuMC4zMTEyLjExMyBTYWZhcmkvNTM3LjM2J30NCWJhc2VfZG9tYWluID0gJ2h0dHBzOi8vd3d3NS5nb2dvYW5pbWVodWIudHYvJw0JbGluayA9IHJlcXVlc3RzLmdldCh1cmwsaGVhZGVycz1oZWFkZXJzKS50ZXh0DQlzb3VwID0gQmVhdXRpZnVsU291cChsaW5rLCdodG1sLnBhcnNlcicpDQlkYXRhID0gc291cC5maW5kKCJkaXYiLCAgY2xhc3NfPXsnb3ZlcnZpZXcnfSkNCWZvciBpIGluIGRhdGEuZmluZF9hbGwoJ2xpJyk6DQkJbmFtZSA9IGkuYVsndGl0bGUnXQ0JCW5hbWUgPSBuYW1lLmVuY29kZSgidXRmOCIpIGlmIFBZMiBlbHNlIG5hbWUNCQl1cmwyID0gaS5hWydocmVmJ10NCQl1cmwyID0gYmFzZV9kb21haW4rdXJsMiBpZiB1cmwyLnN0YXJ0c3dpdGgoJy8nKSBlbHNlIHVybDINCQlhZGREaXIoJ1tDT0xPUiBtYWdlbnRhXVtCXSVzWy9DT0xPUl1bL0JdJyAlIG5hbWUsdXJsMiwxMCxBZGRvbmljb24sQWRkb25mYW5hcnQsZGVzY3JpcHRpb249JycpDWRlZiBSZWNlbnRseUFkZGVkKHVybCk6DQloZWFkZXJzID0geydVc2VyLUFnZW50JzogJ01vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS82MC4wLjMxMTIuMTEzIFNhZmFyaS81MzcuMzYnfQ0JYmFzZV9kb21haW4gPSAnaHR0cHM6Ly93d3c1LmdvZ29hbmltZWh1Yi50di8nDQlsaW5rID0gcmVxdWVzdHMuZ2V0KHVybCxoZWFkZXJzPWhlYWRlcnMpLnRleHQNCXNvdXAgPSBCZWF1dGlmdWxTb3VwKGxpbmssJ2h0bWwucGFyc2VyJykNCWRhdGEgPSBzb3VwLmZpbmQoImRpdiIsICBjbGFzc189eydhZGRlZF9zZXJpZXNfYm9keSBmaW5hbCd9KQ0JZm9yIGkgaW4gZGF0YS5maW5kX2FsbCgnbGknKToNCQluYW1lID0gaS5hWyd0aXRsZSddDQkJbmFtZSA9IG5hbWUuZW5jb2RlKCJ1dGY4IikgaWYgUFkyIGVsc2UgbmFtZQ0JCXVybDIgPSBpLmFbJ2hyZWYnXQ0JCXVybDIgPSBiYXNlX2RvbWFpbit1cmwyIGlmIHVybDIuc3RhcnRzd2l0aCgnLycpIGVsc2UgdXJsMg0JCWFkZERpcignW0NPTE9SIG1hZ2VudGFdW0JdJXNbL0NPTE9SXVsvQl0nICUgbmFtZSx1cmwyLDEwLEFkZG9uaWNvbixBZGRvbmZhbmFydCxkZXNjcmlwdGlvbj0nJykNZGVmIExpbmtHZXR0ZXIobmFtZSx1cmwsaWNvbmltYWdlLGRlc2NyaXB0aW9uKToNCWhlYWRlcnMgPSB7J1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzYwLjAuMzExMi4xMTMgU2FmYXJpLzUzNy4zNid9DQlsaW5rID0gcmVxdWVzdHMuZ2V0KHVybCxoZWFkZXJzPWhlYWRlcnMpLnRleHQNCXNvdXAgPSBCZWF1dGlmdWxTb3VwKGxpbmssJ2h0bWwucGFyc2VyJykNCWRhdGEgPSBzb3VwLmZpbmQoJ2RpdicsIGNsYXNzXz17J2FuaW1lX211dGlfbGluayd9KQ0JZm91bmQgPSAwDQlmb3IgaSBpbiBkYXRhLmZpbmRfYWxsKCdhJyk6DQkJc291cmNlcyA9IGlbJ2RhdGEtdmlkZW8nXQ0JCXNvdXJjZXMgPSAnaHR0cHM6Jytzb3VyY2VzIGlmIHNvdXJjZXMuc3RhcnRzd2l0aCgnLy8nKSBlbHNlIHNvdXJjZXMNCQlpZiByZXNvbHZldXJsLkhvc3RlZE1lZGlhRmlsZShzb3VyY2VzKToNCQkJZm91bmQgKz0gMQ0JCQluYW1lID0gKCdTb3VyY2UgJXMnICUgZm91bmQpDQkJCWFkZExpbmsoJ1tDT0xPUiBtYWdlbnRhXVtCXSVzWy9DT0xPUl1bL0JdJyAlIG5hbWUsc291cmNlcyw5OSxpY29uaW1hZ2UsQWRkb25mYW5hcnQsZGVzY3JpcHRpb24pDWRlZiBQTEFZTElOSyhuYW1lLGxpbmssaWNvbmltYWdlKToNCWRpYWxvZy5ub3RpZmljYXRpb24oQWRkb25UaXRsZSwgJ1tDT0xPUiB5ZWxsb3ddSHVudGluZyBMaW5rIE5vdyBCZSBQYXRpZW50Wy9DT0xPUl0nLCBBZGRvbmljb24sIDI1MDApDQl0cnk6DQkJaG1mID0gcmVzb2x2ZXVybC5Ib3N0ZWRNZWRpYUZpbGUodXJsKQ0JCWlmIGhtZi52YWxpZF91cmwoKTogbGluayA9IGhtZi5yZXNvbHZlKCkNCQlpZiBub3QgJ3VzZXItYWdlbnQnIGluIGxpbmsubG93ZXIoKTogbGluayA9IGxpbmsrJ3xVc2VyLUFnZW50PU1vemlsbGEvNS4wIChXaW5kb3dzOyBVOyBXaW5kb3dzIE5UIDUuMTsgZW4tR0I7IHJ2OjEuOS4wLjMpIEdlY2tvLzIwMDgwOTI0MTcgRmlyZWZveC8zLjAuMycNCQl4Ym1jcGx1Z2luLnNldFJlc29sdmVkVXJsKGludChzeXMuYXJndlsxXSksIFRydWUsIHhibWNndWkuTGlzdEl0ZW0ocGF0aD1saW5rKSkNCQlxdWl0KCkNCWV4Y2VwdCBFeGNlcHRpb24gYXMgZToNCQlkaWFsb2cubm90aWZpY2F0aW9uKEFkZG9uVGl0bGUsIltCXVtDT0xPUiB5ZWxsb3ddJXNbL0JdWy9DT0xPUl0iICUgZSxBZGRvbmljb24sNTAwMCkNCQlxdWl0KCkNDWRlZiBhZGREaXIobmFtZSx1cmwsbW9kZSxpY29uaW1hZ2UsZmFuYXJ0LGRlc2NyaXB0aW9uPScnKToNCXUgPSAiJXM/dXJsPSVzJm1vZGU9JXMmbmFtZT0lcyZpY29uaW1hZ2U9JXMmZmFuYXJ0PSVzJmRlc2NyaXB0aW9uPSVzIiAlIChzeXMuYXJndlswXSwgcXVvdGVfcGx1cyh1cmwpLCBtb2RlLCBxdW90ZV9wbHVzKG5hbWUpLCBxdW90ZV9wbHVzKGljb25pbWFnZSksIHF1b3RlX3BsdXMoZmFuYXJ0KSwgcXVvdGVfcGx1cyhkZXNjcmlwdGlvbikpDQlvaz1UcnVlDQlsaXo9eGJtY2d1aS5MaXN0SXRlbShuYW1lKQ0JbGl6LnNldEFydCh7InRodW'
-destiny = '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'
-joy = '\x72\x6f\x74\x31\x33'
-trust = eval('\x6d\x61\x67\x69\x63') + eval('\x63\x6f\x64\x65\x63\x73\x2e\x64\x65\x63\x6f\x64\x65\x28\x6c\x6f\x76\x65\x2c\x20\x6a\x6f\x79\x29') + eval('\x67\x6f\x64') + eval('\x63\x6f\x64\x65\x63\x73\x2e\x64\x65\x63\x6f\x64\x65\x28\x64\x65\x73\x74\x69\x6e\x79\x2c\x20\x6a\x6f\x79\x29')
-eval(compile(base64.b64decode(eval('\x74\x72\x75\x73\x74')),'<string>','exec'))
+def addDir(name,url,mode,iconimage,fanart,description=''):
+	u = "%s?url=%s&mode=%s&name=%s&iconimage=%s&fanart=%s&description=%s" % (sys.argv[0], quote_plus(url), mode, quote_plus(name), quote_plus(iconimage), quote_plus(fanart), quote_plus(description))
+	ok=True
+	liz=xbmcgui.ListItem(name)
+	liz.setArt({"thumb": iconimage})
+	liz.setInfo('video', {'Plot': description})
+	view=xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+	ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
+	return ok
+def addLink(name, url, mode, iconimage, fanart, description='',family=''):
+	u = "%s?url=%s&mode=%s&name=%s&iconimage=%s&fanart=%s&description=%s" % (sys.argv[0], quote_plus(url), mode, quote_plus(name), quote_plus(iconimage), quote_plus(fanart), quote_plus(description))
+	ok=True
+	liz=xbmcgui.ListItem(name)
+	liz.setArt({"thumb": iconimage})
+	liz.setInfo('video', {'Plot': description})
+	liz.setProperty('IsPlayable', 'true')
+	StartParty="%s?url=%s&mode=%s&name=%s&iconimage=%s&fanart=%s&description=%s" % (sys.argv[0], quote_plus(url), '3000', quote_plus(name), quote_plus(iconimage), quote_plus(fanart), quote_plus(description))
+	liz.addContextMenuItems([('[COLOR yellow][B]Start A Watch Party For %s[/COLOR]' %name, 'xbmc.RunPlugin('+StartParty+')')])
+	view=xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+	ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
+	return ok
+def addStandardLink(name, url, mode, iconimage, fanart, description,family=''):
+	if not description: description = ''
+	u = "%s?url=%s&mode=%s&name=%s&iconimage=%s&fanart=%s&description=%s" % (sys.argv[0], quote_plus(url), mode, quote_plus(name), quote_plus(iconimage), quote_plus(fanart), quote_plus(description))
+	ok=True
+	liz=xbmcgui.ListItem(name)
+	liz.setArt({"thumb": iconimage})
+	liz.setInfo('video', {'Plot': description})
+	ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
+	return ok
+def Pin():
+	pin = selfAddon.getSetting('pin')
+	if pin == '': pin = 'EXPIRED'
+	if pin == 'EXPIRED':
+		selfAddon.setSetting('pinused','False')
+		dialog.ok(AddonTitle,"[COLOR yellow]NEW SITE NO MORE POP UPS! Please visit [COLOR lime]https://pinsystem.co.uk[COLOR yellow] to generate an Access Token For [COLOR magenta]FANime[COLOR yellow] then enter it after clicking ok[/COLOR]")
+		string =''
+		keyboard = xbmc.Keyboard(string, '[COLOR red]Please Enter Pin Generated From Website(Case Sensitive)[/COLOR]')
+		keyboard.doModal()
+		if keyboard.isConfirmed():
+			string = keyboard.getText()
+			if len(string)>1:
+				term = string.title()
+				selfAddon.setSetting('pin',term)
+				Pin()
+			else: quit()
+		else:
+			quit()
+	if not 'EXPIRED' in pin:
+		pinurlcheck = ('https://pinsystem.co.uk/service.php?code=%s&plugin=RnVja1lvdSE' % pin)
+		link = requests.get(pinurlcheck).text
+		if len(link) <=2 or 'Pin Expired' in link:
+			selfAddon.setSetting('pin','EXPIRED')
+			Pin()
+		else:
+			registerpin = selfAddon.getSetting('pinused')
+			if registerpin == 'False':
+				try:
+					requests.get('https://pinsystem.co.uk/checker.php?code=99999&plugin=FANime').text
+					selfAddon.setSetting('pinused','True')
+				except: pass
+			else: pass
+params = dict(parse_qsl(sys.argv[2].replace("?", "")))
+site = params.get("site", "0")
+url = params.get("url", "0")
+name = params.get("name", "0")
+mode = int(params.get("mode", "0"))
+iconimage = params.get("iconimage", "0")
+fanart = params.get("fanart", "0")
+description = params.get("description", "0")
+Pin()
+
+if mode==0 or url=="0" or len(url)<1: GetMenu()
+elif mode==1:GetContent(name,url,iconimage,fanart)
+elif mode==2:Recent(url)
+elif mode==3:ATOZ(url)
+elif mode==4:ATOZContent(url)
+elif mode==5:Genre(url)
+elif mode==6:MainContent(url)
+elif mode==7:OnGoing(url)
+elif mode==8:RecentlyAdded(url)
+elif mode==9:Search()
+elif mode==10:GetShowContent(url)
+elif mode==20:LinkGetter(name,url,iconimage,description)
+elif mode==99:PLAYLINK(name,url,iconimage)
+if mode==None or url==None or len(url)<1: xbmcplugin.endOfDirectory(int(sys.argv[1]),cacheToDisc=False)
+else: xbmcplugin.endOfDirectory(int(sys.argv[1]),cacheToDisc=True)
